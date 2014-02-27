@@ -1,0 +1,10 @@
+
+production:
+  auto_create: true
+  deny_delete: false
+  post_create: /var/www/repos/svn
+  allow_add_local: true
+  svn:
+    path: /var/www/repos/svn
+    svnadmin: /usr/bin/svnadmin
+    url: http://localhost/svn

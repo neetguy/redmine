@@ -1,0 +1,78 @@
+
+#!/bin/bash
+#
+# unicorn_rails_redmine Startup script for unicorn.
+#
+# chkconfig: - 85 15
+# description: redmine on unicorn start/stop script.
+#
+
+#
+# set rvm environment valiables.
+#
+export RVM_USER=railsuser
+export RVM_GEMSET_NAME=redmine243
+export RUBY_VERSION=ruby-2.1.0
+export RVM_GEMSET_PREFIX=$RUBY_VERSION@$RVM_GEMSET_NAME
+export RVM_HOME=/home/$RVM_USER/.rvm
+
+export REDMINE_NAME=redmine-2.4.3
+export REDMINE_PORT=60000
+export REDMINE_HTTP_PATH=/redmine
+
+export MY_RUBY_HOME=$RVM_HOME/rubies/$RUBY_VERSION
+export IRBRC=$RVM_HOME/rubies/$RUBY_VERSION/.irbrc
+export GEM_HOME=$RVM_HOME/gems/$RVM_GEMSET_PREFIX
+export GEM_PATH=$RVM_HOME/gems/$RVM_GEMSET_PREFIX
+export GEM_PATH=$GEM_PATH:$RVM_HOME/gems/$RUBY_VERSION@global
+
+export PATH=$RVM_HOME/gems/$RVM_GEMSET_PREFIX/bin
+export PATH=$PATH:$RVM_HOME/gems/$RUBY_VERSION@global/bin
+export PATH=$PATH:$MY_RUBY_HOME/bin
+export PATH=$PATH:$RVM_HOME/bin
+export PATH=$PATH:/usr/kerberos/bin:/usr/local/bin:/bin:/usr/bin
+export PATH=$PATH:/home/$RVM_USER/bin
+export BUNDLE_PATH=
+
+set -u
+set -e
+
+APP_ROOT="/home/$RVM_USER/app/$REDMINE_NAME"
+CNF="$APP_ROOT/config/unicorn.rb"
+PID="$APP_ROOT/tmp/pids/unicorn.pid"
+ENV=production
+
+UNICORN_OPTS="-c $CNF -E $ENV -D -p $REDMINE_PORT --path=$REDMINE_HTTP_PATH"
+
+old_pid="$PID.oldbin"
+
+cd $APP_ROOT || exit 1
+
+sig () {
+        test -s "$PID" && kill -$1 `cat $PID`
+}
+
+oldsig () {
+        test -s $old_pid && kill -$1 `cat $old_pid`
+}
+
+case ${1-help} in
+start)
+        sig 0 && echo >&2 "Already running" && exit 0
+        cd $APP_ROOT ; unicorn_rails $UNICORN_OPTS
+        ;;
+stop)
+        sig QUIT && exit 0
+        echo >&2 "Not running"
+        ;;
+reload)
+        sig USR2 ; sleep 1 ;
+        sig WINCH ; sleep 1 ;
+        sig QUIT && exit 0
+        echo >&2 "Not running"
+        ;;
+*)
+        echo >&2 "Usage: $0 "
+        exit 1
+        ;;
+esac
